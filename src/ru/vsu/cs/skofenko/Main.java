@@ -23,9 +23,15 @@ public class Main {
                 f.prepare(in.nextLine());
 
                 System.out.println("Введите свои значения:");
-                double v = f.execute(Arrays.stream(in.nextLine().split(" ")).mapToDouble(Double::parseDouble).toArray());
-                System.out.println(v);
+                String str = in.nextLine();
+                double v;
+                if (str.isEmpty()) {
+                    v = f.execute();
+                } else {
+                    v = f.execute(Arrays.stream(str.split(" ")).mapToDouble(Double::parseDouble).toArray());
+                }
 
+                System.out.print(v);
                 break;
             } catch (Exception e) {
                 System.out.println("Попробуйте еще разок!");
@@ -34,6 +40,9 @@ public class Main {
     }
 
     private static void tests(Formula f) {
+        f.prepare("2*x*y/3");
+        System.out.println(f.execute(2.5, 3));//5
+
         f.prepare("2*x+y/3");
         System.out.println(f.execute(2.5, 3));//6
 

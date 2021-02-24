@@ -1,6 +1,6 @@
 package ru.vsu.cs.skofenko.mathInterpreter;
 
-public class VariableNode extends Node {
+class VariableNode extends Node {
     private final String NAME;
 
     public VariableNode(String NAME) {

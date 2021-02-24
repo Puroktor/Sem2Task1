@@ -4,58 +4,94 @@ import java.util.*;
 
 public class Formula {
     private List<String> variables;
-    private Set<String> variablesSet;
     private Node root;
 
     public void prepare(String str) {
-        List<String> formula = parseStr(str);
+        List<String> tokenList = parseStr(str); // O(n)
 
+        root = buildTree(tokenList); // O(n)
+    } // O(n) по времени, O(n) по памяти
+
+    private Node buildTree(List<String> tokenList) {
+        if (tokenList.size() == 0) {
+            throw new IllegalArgumentException();
+        }
         variables = new ArrayList<>();
-        variablesSet = new HashSet<>();
-        root = buildTree(formula, 0, formula.size());
-    }
-
-    private Node buildTree(List<String> formula, int start, int end) {
-        if (end - start == 1) {
-            try {
-                return new NumNode(Double.parseDouble(formula.get(start)));
-            } catch (NumberFormatException e) {
-                String s = formula.get(start);
-                if (!variablesSet.contains(s)) {
-                    variables.add(s);
-                    variablesSet.add(s);
-                }
-                return new VariableNode(formula.get(start));
-            }
-        }
-
-        String sign1 = "+", sign2 = "-";
-        Operations op1 = Operations.ADD, op2 = Operations.SUBTRACT;
-        for (int i = 0; i < 2; i++) {
-            for (int j = end - 1; j >= start; j--) {
-                if (formula.get(j).equals(sign1) || formula.get(j).equals(sign2)) {
-                    OperationNode node;
-                    if (formula.get(j).equals(sign1)) {
-                        node = new OperationNode(op1);
+        Set<String> variablesSet = new HashSet<>();
+        Node root = null, multiRoot = null, node = null;
+        for (String token : tokenList) {
+            switch (token) {
+                case "+":
+                case "-":
+                    if (node == null)
+                        throw new IllegalArgumentException();
+                    if (root == null) {
+                        root = new OperationNode(token.equals("+") ? Operations.ADD : Operations.SUBTRACT);
+                        if (multiRoot == null) {
+                            root.setLeftChild(node);
+                        } else {
+                            multiRoot.setRightChild(node);
+                            root.setLeftChild(multiRoot);
+                        }
                     } else {
-                        node = new OperationNode(op2);
+                        if (multiRoot == null) {
+                            root.setRightChild(node);
+                        } else {
+                            multiRoot.setRightChild(node);
+                            root.setRightChild(multiRoot);
+                        }
+                        Node temp = root;
+                        root = new OperationNode(token.equals("+") ? Operations.ADD : Operations.SUBTRACT);
+                        root.setLeftChild(temp);
                     }
-                    node.setLeftChild(buildTree(formula, start, j));
-                    node.setRightChild(buildTree(formula, j + 1, end));
-                    return node;
-                }
+                    multiRoot = null;
+                    break;
+                case "*":
+                case "/":
+                    if (node == null)
+                        throw new IllegalArgumentException();
+                    if (multiRoot == null) {
+                        multiRoot = new OperationNode(token.equals("*") ? Operations.MULTYPLY : Operations.DIVIDE);
+                        multiRoot.setLeftChild(node);
+                    } else {
+                        multiRoot.setRightChild(node);
+                        Node temp = multiRoot;
+                        multiRoot = new OperationNode(token.equals("*") ? Operations.MULTYPLY : Operations.DIVIDE);
+                        multiRoot.setLeftChild(temp);
+                    }
+                    break;
+                default:
+                    try {
+                        node = new NumNode(Double.parseDouble(token));
+                    } catch (NumberFormatException e) {
+                        node = new VariableNode(token);
+                        if (!variablesSet.contains(token)) {
+                            variables.add(token);
+                            variablesSet.add(token);
+                        }
+                    }
+                    break;
             }
-            sign1 = "*";
-            sign2 = "/";
-            op1 = Operations.MULTYPLY;
-            op2 = Operations.DIVIDE;
         }
 
-        throw new UnsupportedOperationException();
-    }
+        if (root != null) {
+            if (multiRoot == null) {
+                root.setRightChild(node);
+            } else {
+                multiRoot.setRightChild(node);
+                root.setRightChild(multiRoot);
+            }
+            return root;
+        } else if (multiRoot != null) {
+            multiRoot.setRightChild(node);
+            return multiRoot;
+        } else {
+            return node;
+        }
+    }//Итого: O(n) по времени, O(n) по памяти
 
     private List<String> parseStr(String str) {
-        List<String> formula = new ArrayList<>();
+        List<String> tokenList = new ArrayList<>();
         StringBuilder tmp = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             char ch = str.charAt(i);
@@ -64,11 +100,11 @@ public class Formula {
             } else {
                 if (tmp.length() != 0) {
                     String s = tmp.toString();
-                    formula.add(s); // O(1)
+                    tokenList.add(s); // O(1)
                     tmp = new StringBuilder();
                 }
                 if (ch == '+' || ch == '-' || ch == '*' || ch == '/') {
-                    formula.add(String.valueOf(ch)); // O(1)
+                    tokenList.add(String.valueOf(ch)); // O(1)
                 } else if (ch != ' ') {
                     throw new UnsupportedOperationException();
                 }
@@ -76,9 +112,9 @@ public class Formula {
         }
         if (tmp.length() != 0) {
             String s = tmp.toString();
-            formula.add(s);
+            tokenList.add(s);
         }
-        return formula;
+        return tokenList;
     }//Итого: по времени: O(n), по памяти O(n)
 
     public double execute(double... x) {
@@ -89,8 +125,8 @@ public class Formula {
         for (int i = 0; i < x.length; i++) {
             map.put(variables.get(i), x[i]); //O(1)
         }
-        return count(map, root);
-    }
+        return count(map, root); // O(n)
+    } // O(n) по времени, O(n) по памяти
 
     private double count(Map<String, Double> map, Node node) {
         if (node instanceof OperationNode) {
@@ -103,7 +139,7 @@ public class Formula {
         } else if (node instanceof NumNode) {
             return ((NumNode) node).getVALUE();
         } else {
-            return map.get(((VariableNode) node).getNAME());
+            return map.get(((VariableNode) node).getNAME()); //O(1)
         }
-    }
+    } // O(n) по времени, O(n) по памяти
 }

@@ -1,6 +1,6 @@
 package ru.vsu.cs.skofenko.mathInterpreter;
 
-public class OperationNode extends Node {
+class OperationNode extends Node {
     private final Operations OPERATION;
 
     public OperationNode(Operations OPERATION) {
